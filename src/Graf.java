@@ -11,20 +11,33 @@ public class Graf {
 
 
     private int m;
+
     private int n;
+
     private int[][] H;
+
     private int[][] epsilon;
 
     private ArrayList<Integer> tRPomoc;
+
     private ArrayList<Integer> tIPomoc;
+
     private ArrayList<Integer> cesta;
+
     private int tU;
+
     private int[] tI;
+
     private int[] xI;
+
     private int tR;
+
     private int R;
+
     private int posledny;
+
     private int sprava;
+    private int cenaCesty;
 
     public Graf(int paPocetVrcholov, int paPocetHran) {
         this.n = paPocetVrcholov;
@@ -36,7 +49,7 @@ public class Graf {
         this.tI = new int[this.n + 1];
         this.xI = new int[this.n + 1];
         this.cesta = new ArrayList<Integer>();
-
+        this.cenaCesty = 0;
 
     }
 
@@ -102,7 +115,6 @@ public class Graf {
         boolean test2 = false;
 
 
-
         for (int j = 1; j <= this.m; j++) {
             if (this.tU == this.H[j][0]) {
                 test = true;
@@ -110,10 +122,11 @@ public class Graf {
         }
         if (!test) {
             System.out.println("Zaciatocny Vrchol " + zatiatocniVrchol + " bud ne existuje alebo neni vystupnim vrcholom ziadnej hrany");
-        } else if (test) {
+        } else {
             for (int i = 1; i <= this.m; i++) {
                 if (konecnyVrchol == this.H[i][1]) {
                     test2 = true;
+                    break;
                 }
             }
         }
@@ -121,104 +134,107 @@ public class Graf {
             System.out.println("konecnt Vrchol " + konecnyVrchol + " bud ne existuje alebo neni vstupnym vrcholom ziadnej hrany");
         } else {
 
-
-            int odstranenie = 0;
-            this.tIPomoc.sort(null);
+            krok1();
 
 
-            for (int j = 0; j <= this.tIPomoc.size() - 1; j++) {
-                this.xI[this.tIPomoc.get(j)] = 0;
+        }
+
+    }
 
 
-            }
+    public void krok1() {
 
+        int odstranenie = 0;
+        this.tIPomoc.sort(null);
 
-            for (int j = 0; j <= this.n - (1 + odstranenie); j++) {
-                if (this.tIPomoc.get(j) == this.tU) {
-                    this.tIPomoc.remove(j);
-                    odstranenie += 1;
+        for (int j = 0; j <= this.tIPomoc.size() - 1; j++) {
+            this.xI[this.tIPomoc.get(j)] = 0;
 
-                }
+        }
 
-            }
-
-            for (int j = 0; j <= this.tIPomoc.size() - odstranenie; j++) {
-                this.tI[this.tIPomoc.get(j)] = Integer.MAX_VALUE / 2;
-
-
-            }
-
-
-            this.epsilon[this.tU][0] = this.tU;
-            this.epsilon[this.tU][1] = 0;
-            this.tRPomoc.add(0);
-
-
-            for (int j = 0; j <= this.m; j++) {
-                if (this.epsilon[j][0] != konecnyVrchol) {
-
-                    if (this.epsilon[j][0] != 0 && this.epsilon[j][1] == this.tRPomoc.getFirst()) {
-
-                        this.R = this.epsilon[j][0];
-                        this.tR = this.epsilon[j][1];
-                        this.tRPomoc.removeFirst();
-
-
-
-
-                        this.epsilon[j][0] = 0;
-                        this.epsilon[j][1] = 0;
-
-                        for (int i = 1; i <= this.m; i++) {
-                            if (this.R == this.H[i][0]) {
-
-
-                                if (this.tR + this.H[i][2] < this.tI[this.H[i][1]]) {
-
-                                    this.tI[this.H[i][1]] = this.epsilon[this.R][1] + this.H[i][2];
-                                    this.xI[this.H[i][1]] = this.R;
-                                    if(!this.cesta.contains(this.R)) {
-                                        this.cesta.add(this.R);
-                                    }
-                                    this.epsilon[i][0] = this.H[i][1];
-                                    this.epsilon[i][1] = this.H[i][2];
-                                    this.tRPomoc.add(this.H[i][2]);
-
-
-                                }
-                                this.tRPomoc.sort(null);
-                                j = 0;
-
-                            }
-
-
-
-
-
-                        }
-
-
-                    }
-                } else {
-                    this.cesta.addLast(this.posledny);
-                    for (int i = 1; i <= this.cesta.size() ; i++) {
-
-                        System.out.print(this.cesta.get(this.cesta.size() - i) + " ");
-
-                        j = this.m;
-                    }
-                    System.out.println();
-                    System.out.println("pocet vrcholov " + this.cesta.size());
-                    }
-
-                }
-             }  if (this.tRPomoc.isEmpty() )  {
-                this.cestaNeExistuje();
+        for (int j = 0; j <= this.n - (1 + odstranenie); j++) {
+            if (this.tIPomoc.get(j) == this.tU) {
+                this.tIPomoc.remove(j);
+                odstranenie += 1;
             }
         }
 
+        for (int j = 0; j <= this.tIPomoc.size() - odstranenie; j++) {
+            this.tI[this.tIPomoc.get(j)] = Integer.MAX_VALUE / 2;
+        }
+
+        this.epsilon[this.tU][0] = this.tU;
+        this.epsilon[this.tU][1] = 0;
+        this.tRPomoc.add(0);
+        this.krok2();
+    }
+
+
+    public void krok2() {
+        for (int j = 0; j <= this.m; j++) {
+            if (this.epsilon[j][0] == this.posledny || this.tRPomoc.isEmpty() ) {
+                this.krok3();
+                break;
+            }
+            if (this.epsilon[j][0] != 0 && this.epsilon[j][1] == this.tRPomoc.getFirst()) {
+
+                this.R = this.epsilon[j][0];
+                this.tR = this.epsilon[j][1];
+                this.tRPomoc.removeFirst();
+                this.cenaCesty += this.tR;
+
+                this.epsilon[j][0] = 0;
+                this.epsilon[j][1] = 0;
+
+                for (int i = 1; i <= this.m; i++) {
+                    if (this.R == this.H[i][0]) {
+
+
+                        if (this.tR + this.H[i][2] < this.tI[this.H[i][1]]) {
+
+                            this.tI[this.H[i][1]] = this.epsilon[this.R][1] + this.H[i][2];
+                            this.xI[this.H[i][1]] = this.R;
+                            if (!this.cesta.contains(this.R)) {
+                                this.cesta.add(this.R);
+                            }
+                            this.epsilon[i][0] = this.H[i][1];
+                            this.epsilon[i][1] = this.H[i][2];
+                            this.tRPomoc.add(this.H[i][2]);
+
+                        }
+                        this.tRPomoc.sort(null);
+                    }
+                    j = 0;
+                }
+            }
+
+        }
+
+
+    }
+
+    public void krok3() {
+        if (this.tRPomoc.isEmpty()) {
+            this.cestaNeExistuje();
+
+        } else {
+
+        this.cesta.addLast(this.posledny);
+        for (int i = 1; i <= this.cesta.size(); i++) {
+
+            System.out.print(this.cesta.get(this.cesta.size() - i) + " ");
+
+
+        }
+        System.out.println();
+        System.out.println("pocet vrcholov " + this.cesta.size());
+        System.out.println("Cena cesty " + this.cenaCesty);
+    }
+    }
+
+
     public void cestaNeExistuje() {
-        
+
         if (this.sprava == 0) {
             System.out.println("K konecnemu vrcholu " + this.posledny + " nevedie cesta od vrcholu " + this.tU);
             this.sprava++;
