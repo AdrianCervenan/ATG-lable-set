@@ -10,34 +10,41 @@ import java.util.Scanner;
 public class Graf {
 
 
-    private int m;
+    private int m;  //pocet hran v grafe
+    private int n;  //pocet vrcholov v grafe
 
-    private int n;
+    private int[][] H; //ulozisko hran
 
-    private int[][] H;
+    private int[][] epsilon; //pole pre ulozenie vrcholov na spracovanie a ich cenu
 
-    private int[][] epsilon;
+    private ArrayList<Integer> tIPomoc; //list vsetkych najdenich vrcholov zo suboru bez prveho
 
-    private ArrayList<Integer> tRPomoc;
+    private ArrayList<Integer> epsilonPomoc; //list na ulozenie cien najdenich vrcholov
 
-    private ArrayList<Integer> tIPomoc;
+    private ArrayList<Integer> cesta; // zoznam vrcholov tvoriacich vyslednu cestu
 
-    private ArrayList<Integer> cesta;
+    private int tU; //pociatocni vrchol
 
-    private int tU;
+    private int[] tI;//pole cien vrcholov
 
-    private int[] tI;
+    private int[] xI; //pole predchodcov
 
-    private int[] xI;
+    private int tR; //aktualne spracovana cena
 
-    private int tR;
+    private int R; //aktualne spracovany vrchol
 
-    private int R;
+    private int posledny; //hladany vrchol
 
-    private int posledny;
+    private int cenaCesty; //celkova suma dlzok hran najdenej cesty
 
-    private int sprava;
-    private int cenaCesty;
+    private int sprava; //pomoc aby sa chybova sprava vypisala len raz
+    private int predchodca;
+    private int pocetvrcholovVceste;
+    private int prvy;
+
+    private boolean[] pouzity;
+
+
 
     public Graf(int paPocetVrcholov, int paPocetHran) {
         this.n = paPocetVrcholov;
@@ -45,12 +52,12 @@ public class Graf {
         this.H = new int[1 + this.m][3];
         this.epsilon = new int[this.m + 1][2];
         this.tIPomoc = new ArrayList<Integer>();
-        this.tRPomoc = new ArrayList<Integer>();
+        this.epsilonPomoc = new ArrayList<Integer>();
         this.tI = new int[this.n + 1];
         this.xI = new int[this.n + 1];
         this.cesta = new ArrayList<Integer>();
         this.cenaCesty = 0;
-
+        this.pouzity = new boolean[this.n +1 ];
     }
 
     public static Graf nacitajSubor(String nazovSuboru)
@@ -89,6 +96,7 @@ public class Graf {
             int v = s.nextInt();
             int c = s.nextInt();
 
+            //naplni ArrayList tiPomoc vsetkymi vrcholmy
             if (g.tIPomoc.isEmpty() || !g.tIPomoc.contains(u)) {
                 g.tIPomoc.add(u);
 
@@ -108,21 +116,28 @@ public class Graf {
     }
 
     public void labelSet(int zatiatocniVrchol, int konecnyVrchol) {
-        this.tU = zatiatocniVrchol;
+
+        this.prvy = zatiatocniVrchol;
         this.posledny = konecnyVrchol;
+
+
 
         boolean test = false;
         boolean test2 = false;
 
+        this.tU = this.prvy;
 
+        //test pre existenciu prveho vrchola a ci je vystupnim vrcholom niakej hrany
         for (int j = 1; j <= this.m; j++) {
             if (this.tU == this.H[j][0]) {
                 test = true;
             }
         }
+
         if (!test) {
             System.out.println("Zaciatocny Vrchol " + zatiatocniVrchol + " bud ne existuje alebo neni vystupnim vrcholom ziadnej hrany");
         } else {
+            //test pre existenciu posledneho vrchola a ci je vstupnim vrcholom niakej hrany
             for (int i = 1; i <= this.m; i++) {
                 if (konecnyVrchol == this.H[i][1]) {
                     test2 = true;
@@ -145,92 +160,171 @@ public class Graf {
     public void krok1() {
 
         int odstranenie = 0;
+        //roztriedy pole vsetkych najdenich vrcholov od najmensieho po najvetsi
         this.tIPomoc.sort(null);
 
+        //inicializuje pole predchodcou a naplni ho nulami
         for (int j = 0; j <= this.tIPomoc.size() - 1; j++) {
             this.xI[this.tIPomoc.get(j)] = 0;
 
         }
-
+        //odstrani prvy vrchol z ArrayListu tIPomoc
         for (int j = 0; j <= this.n - (1 + odstranenie); j++) {
             if (this.tIPomoc.get(j) == this.tU) {
                 this.tIPomoc.remove(j);
                 odstranenie += 1;
             }
         }
-
+        //inicializuje pole cienVrcholov s hodnotou "nekonecno" pre kazdy vrchol
         for (int j = 0; j <= this.tIPomoc.size() - odstranenie; j++) {
             this.tI[this.tIPomoc.get(j)] = Integer.MAX_VALUE / 2;
         }
+        if (this.tU == this.posledny){
+            System.out.println(this.tU);
+            System.out.println("cena cesty = 0" );
+            System.out.println("pocet vrcholov v ceste = 1" );
+            System.out.println("pocet hran v ceste = 0" );
+        }else {
 
+        //vlozy do mnoziny epsilon prvy vrchol a da mu cenu 0
         this.epsilon[this.tU][0] = this.tU;
         this.epsilon[this.tU][1] = 0;
-        this.tRPomoc.add(0);
+        //vlozi do pomocneho pola cenu prveho vrchola
+        this.epsilonPomoc.add(0);
+
         this.krok2();
+    }
     }
 
 
     public void krok2() {
+
+        while (!this.epsilonPomoc.isEmpty()) {
+
+
         for (int j = 0; j <= this.m; j++) {
-            if (this.epsilon[j][0] == this.posledny || this.tRPomoc.isEmpty() ) {
-                this.krok3();
-                break;
-            }
-            if (this.epsilon[j][0] != 0 && this.epsilon[j][1] == this.tRPomoc.getFirst()) {
 
+            //pokial epsilon neni prazdni najde vstupni vrchol s najmešiou cenou
+            if (this.epsilon[j][0] != 0 && this.epsilon[j][1] == this.epsilonPomoc.getFirst()) {
+
+                //ulozime najdeni vrchol a jeho cenu z epsilonu R a tR
                 this.R = this.epsilon[j][0];
+                if (this.R == this.posledny) {
+                    krok3();
+                    return;
+                }
                 this.tR = this.epsilon[j][1];
-                this.tRPomoc.removeFirst();
-                this.cenaCesty += this.tR;
 
+                //odstranime ulozeni vrchol z epsilonu
+                this.epsilonPomoc.removeFirst();
                 this.epsilon[j][0] = 0;
                 this.epsilon[j][1] = 0;
+                break;
+            }
+        }
+            if (this.pouzity[this.R]) continue;
+            this.pouzity[this.R] = true;
 
                 for (int i = 1; i <= this.m; i++) {
+                    //porovnavame naš pouzivany vrchol zo všetkymi vystupnimy hranamy digrafe
                     if (this.R == this.H[i][0]) {
 
+                        //pokial je cena aktualneho vrchola + aktualnej hrany menšia ulozena cena v poli cien všetkych vrcholov
+                        if (this.tI[this.R] + this.H[i][2] < this.tI[this.H[i][1]]) {
 
-                        if (this.tR + this.H[i][2] < this.tI[this.H[i][1]]) {
-
-                            this.tI[this.H[i][1]] = this.epsilon[this.R][1] + this.H[i][2];
+                            //ulozi cenu aktualneho vrchola do mnoziny cien vsetkych vrcholov
+                            this.tI[this.H[i][1]] = this.tI[this.R] + this.H[i][2];
+                            //ulozi aktualny vrchol do mnoziny predchodcov
                             this.xI[this.H[i][1]] = this.R;
-                            if (!this.cesta.contains(this.R)) {
-                                this.cesta.add(this.R);
-                            }
-                            this.epsilon[i][0] = this.H[i][1];
-                            this.epsilon[i][1] = this.H[i][2];
-                            this.tRPomoc.add(this.H[i][2]);
+
+                            //prida vstupne vrcholy do mnoziny epsilon
+
+
+                                this.epsilon[i][0] = this.H[i][1];
+                                this.epsilon[i][1] = this.tI[this.H[i][1]];
+
+                                this.epsilonPomoc.add(this.tI[this.H[i][1]]);
 
                         }
-                        this.tRPomoc.sort(null);
-                    }
-                    j = 0;
-                }
-            }
+                        }
+                        //roztriedy Array list epsilon pomoc od najmensieho po najvetči
 
+
+                    }
+            this.epsilonPomoc.sort(null);
+
+
+
+
+
+
+        }
+        krok3();
         }
 
 
-    }
+
 
     public void krok3() {
-        if (this.tRPomoc.isEmpty()) {
+        boolean pravda = false;
+        //testuje či mnozina epsilon je prazdna
+        if (this.epsilonPomoc.isEmpty()) {
             this.cestaNeExistuje();
 
-        } else {
+            //pokial posledny ma predchodcu
+        } else if (this.xI[this.posledny] !=0 )  {
+                    //do cesty pridame posledneho
+                    this.cesta.add(posledny);
+                    //do predchodcu ulozime predchodcu posledneho
+                    this.predchodca = this.xI[this.posledny];
+                    //pridame predchodcu
+                    this.cesta.add(this.predchodca);
+                    //do cesty sme pridali 2 vrcholi
+                    this.pocetvrcholovVceste = 2;
 
-        this.cesta.addLast(this.posledny);
-        for (int i = 1; i <= this.cesta.size(); i++) {
+                    //upravime cenu cesty cenou vrcholov ktore sme pridali do cesty
+                    this.cenaCesty = this.tI[this.posledny];
 
-            System.out.print(this.cesta.get(this.cesta.size() - i) + " ");
+                    System.out.println("(" + this.prvy  +", " + this.posledny +  ")");
+
+                    //v cykle pridavame predchodcov do mnoziny cesta a cenu cesty
+                    for(int j = 1; j <= this.n + 1; j++) {
+
+
+
+                        if(this.xI[this.predchodca] != 0){
+
+                            this.cesta.add(this.xI[this.predchodca]);
+                            this.predchodca = this.xI[this.predchodca];
+                            this.pocetvrcholovVceste += 1;
+
+                        }
+
+                    }
+                    //v cykle vypiseme vsetky hodnoty
+            System.out.println("zoradenie ako (v, u)");
+                for (int i = 0; i <= this.cesta.size() - 1; i++) {
+
+                    System.out.print(this.cesta.get(i) + " ");
+                }
+            System.out.println();
+                System.out.println();
+
+            System.out.println("zoradenie ako (u, v)");
+            for (int i = 1; i <= this.cesta.size() ; i++) {
+
+                System.out.print(this.cesta.get(this.cesta.size() - i) + " ");
+            }
+                System.out.println();
+                System.out.println("cena cesty = " + this.cenaCesty);
+                System.out.println();
+                System.out.println("pocet hran v ceste " + (pocetvrcholovVceste - 1) );
+                System.out.println("pocet vrcholov v ceste " + pocetvrcholovVceste);
+            }
 
 
         }
-        System.out.println();
-        System.out.println("pocet vrcholov " + this.cesta.size());
-        System.out.println("Cena cesty " + this.cenaCesty);
-    }
-    }
+
 
 
     public void cestaNeExistuje() {
@@ -241,7 +335,6 @@ public class Graf {
         }
     }
 }
-
 
 
 
