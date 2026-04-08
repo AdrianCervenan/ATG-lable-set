@@ -15,12 +15,15 @@ public class Graf {
     private int[][] H;
     private ArrayList<Integer> Kpomoc;
     private int[] K;
+    private int[][] HranaKostry;
+    private int cenaKostry;
     public Graf(int paPocetVrcholov, int paPocetHran) {
         this.n = paPocetVrcholov;
         this.m = paPocetHran;
         this.H = new int[1 + this.m][3];
         this.K = new int[1 + this.n];
         this.Kpomoc = new ArrayList<>();
+        this.HranaKostry = new int[1 + this.m][2];
     }
 
     public static Graf nacitajSubor(String nazovSuboru)
@@ -100,13 +103,31 @@ public void ocislovanie(){
 public void krok3(){
         int pocetPouzitichHran = 0;
 
-        for(int i = 1; 1 <= m; i++){
+        for(int i = 1; i <= m; i++){
             int u = this.H[i][0];
             int v = this.H[i][1];
-
+            int c = this.H[i][2];
 
             if(this.K[u] != this.K[v] ){
+                this.HranaKostry[i][0] = u;
+                this.HranaKostry[i][1] = v;
 
+                this.cenaKostry += c;
+                if(this.K[u] > this.K[v]){
+                    for(int j = 1; j <= n; j++){
+                        if(this.K[j] == this.K[u]){
+                            this.K[j] = this.K[v];
+
+                        }
+                    }
+                } else {
+                    for(int j = 1; j <= n; j++){
+                        if(this.K[j] == this.K[v]){
+                            this.K[j] = this.K[u];
+
+                        }
+                    }
+                }
 
                 pocetPouzitichHran +=1;
             }
@@ -114,6 +135,28 @@ public void krok3(){
             if(pocetPouzitichHran == n - 1){
                 break;
             }
+
+        }
+
+
+}
+public void vypis(){
+        System.out.println("cena kostry");
+        System.out.println(this.cenaKostry);
+        System.out.println("vypis Hran");
+        for(int i = 1; i <= this.HranaKostry.length - 1; i++ ) {
+            System.out.print("{ " + this.HranaKostry[i][0] + " "+ this.HranaKostry[i][1] + " }  ");
+        }
+        System.out.println(" ");
+        for(int i = 1; i <= this.K.length - 1; i++ ) {
+            System.out.print(i + " ");
+
+        }
+        System.out.println(" ");
+        for(int i = 1; i <= this.K.length - 1; i++ ) {
+
+
+            System.out.print(this.K[i] + " ");
 
         }
 

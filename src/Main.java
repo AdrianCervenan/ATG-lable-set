@@ -8,6 +8,7 @@ public class Main {
         Scanner s = new Scanner(System.in);
         g.sort();
         g.ocislovanie();
-
+        g.krok3();
+        g.vypis();
     }
 }
